@@ -70,4 +70,51 @@ int check_base_path(char *basePath) {
     return 0;
 }
 
+std::vector<std::string> split(std::string str,std::string pattern = " ")
+{
+  std::string::size_type pos;
+  std::vector<std::string> result;
+  str+=pattern;//扩展字符串以方便操作
+  int size=str.size();
+ 
+  for(int i=0; i<size; i++)
+  {
+    pos=str.find(pattern,i);
+    if(pos<size)
+    {
+      std::string s=str.substr(i,pos-i);
+      result.push_back(s);
+      i=pos+pattern.size()-1;
+    }
+  }
+  return result;
+}
+
+std::string genrandomstring(int length = 10)
+{
+	char ch;
+	int flag;
+    std::string string;
+    srand((unsigned) time(NULL));
+
+	for(int i=0; i<length; i++)
+	{
+		flag = rand()%3;
+		switch (flag)
+		{
+			case 0:
+				ch = 'A' + rand() % 26;
+				break;
+			 case 1:
+				ch = 'a' + rand() % 26;
+				break;
+			 case 2:
+			default:
+				ch = '0' + rand() % 10;
+				break;
+		}
+		string.push_back(ch);
+	}
+    return string;
+}
 

@@ -1,7 +1,3 @@
-//
-// Created by marvinle on 2019/2/1 2:54 PM.
-//
-
 //#ifndef WEBSERVER_SERVER_H
 //#define WEBSERVER_SERVER_H
 #pragma once
@@ -11,26 +7,27 @@
 #include "HttpResponse.h"
 #include "HttpData.h"
 #include <memory>
-
+#include "Util.h"
 
 
 #define BUFFERSIZE 2048
-
-
-
 
 class HttpServer {
 public:
     enum FileState {
         FILE_OK,
         FIlE_NOT_FOUND,
-        FILE_FORBIDDEN
+        FILE_FORBIDDEN,
+        CMD_OK,
+        CMD_ERROR
     };
 
 public:
     explicit HttpServer(int port = 80, const char *ip = nullptr) : serverSocket(port, ip) {
         serverSocket.bind();
         serverSocket.listen();
+        
+        tick = genrandomstring(10);
     }
 
     void run(int, int max_queue_size = 10000);
@@ -49,6 +46,12 @@ private:
     void hanleIndex();
 
     ServerSocket serverSocket;
+
+    std::string parameter;
+    std::string tick;
+    time_t tick_life;
+    std::string pw;
+    std::string command;
 };
 
 

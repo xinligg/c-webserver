@@ -1,7 +1,3 @@
-//
-// Created by marvinle on 2019/2/1 7:34 PM.
-//
-
 #include "../../include/Server.h"
 #include "../../include/HttpParse.h"
 #include "../../include/HttpResponse.h"
@@ -28,7 +24,7 @@ char NOT_FOUND_PAGE[] = "<html>\n"
                         "<head><title>404 Not Found</title></head>\n"
                         "<body bgcolor=\"white\">\n"
                         "<center><h1>404 Not Found</h1></center>\n"
-                        "<hr><center>LC WebServer/0.3 (Linux)</center>\n"
+                        "<hr><center>XL WebServer/0.3 (Linux)</center>\n"
                         "</body>\n"
                         "</html>";
 
@@ -36,14 +32,14 @@ char FORBIDDEN_PAGE[] = "<html>\n"
                         "<head><title>403 Forbidden</title></head>\n"
                         "<body bgcolor=\"white\">\n"
                         "<center><h1>403 Forbidden</h1></center>\n"
-                        "<hr><center>LC WebServer/0.3 (Linux)</center>\n"
+                        "<hr><center>XL WebServer/0.3 (Linux)</center>\n"
                         "</body>\n"
                         "</html>";
 
 char INDEX_PAGE[] = "<!DOCTYPE html>\n"
                     "<html>\n"
                     "<head>\n"
-                    "    <title>Welcome to LC WebServer!</title>\n"
+                    "    <title>Welcome to XL WebServer!</title>\n"
                     "    <style>\n"
                     "        body {\n"
                     "            width: 35em;\n"
@@ -53,14 +49,11 @@ char INDEX_PAGE[] = "<!DOCTYPE html>\n"
                     "    </style>\n"
                     "</head>\n"
                     "<body>\n"
-                    "<h1>Welcome to LC WebServer!</h1>\n"
-                    "<p>If you see this page, the lc webserver is successfully installed and\n"
+                    "<h1>Welcome to XL WebServer!</h1>\n"
+                    "<p>If you see this page, the xl webserver is successfully installed and\n"
                     "    working. </p>\n"
                     "\n"
-                    "<p>For online documentation and support please refer to\n"
-                    "    <a href=\"https://github.com/MarvinLe/WebServer\">LC WebServer</a>.<br/>\n"
-                    "\n"
-                    "<p><em>Thank you for using LC WebServer.</em></p>\n"
+                    "<p><em>Thank you for using XL WebServer.</em></p>\n"
                     "</body>\n"
                     "</html>";
 
@@ -68,6 +61,11 @@ char TEST[] = "HELLO WORLD";
 
 extern std::string basePath;
 
+std::unordered_map<std::string, std::string> Cmd_map = {
+        {"reboot", "reboot"},
+        {"shutdown", "poweroff"},
+        {"poweroff", "poweroff"}
+};
 
 void HttpServer::run(int thread_num, int max_queque_size) {
     ThreadPool threadPool(thread_num, max_queque_size);
@@ -171,8 +169,7 @@ void HttpServer::do_request(std::shared_ptr<void> arg) {
             }
             header(sharedHttpData);
             getMime(sharedHttpData);
-            // FIXME 之前测试时写死的了文件路径导致上服务器出错
-            //static_file(sharedHttpData, "/Users/lichunlin/CLionProjects/webserver/version_0.1");
+
             FileState  fileState = static_file(sharedHttpData, basePath.c_str());
             send(sharedHttpData, fileState);
             // 如果是keep_alive else sharedHttpData将会自动析构释放clientSocket，从而关闭资源
@@ -195,23 +192,24 @@ void HttpServer::header(std::shared_ptr<HttpData> httpData) {
     } else {
         httpData->response_->setVersion(HttpRequest::HTTP_10);
     }
-    httpData->response_->addHeader("Server", "LC WebServer");
+    httpData->response_->addHeader("Server", "XL WebServer");
 }
-
 
 // 获取Mime 同时设置path到response
 void HttpServer::getMime(std::shared_ptr<HttpData> httpData) {
-    std::string filepath = httpData->request_->mUri;
+    std::string urlpath = httpData->request_->mUri;
     std::string mime;
+//    std::string parameter;
     int pos;
-//    std::cout << "uri: " << filepath << std::endl;
-    // FIXME 直接将参数丢掉了，后续可以开发
-    if ((pos = filepath.rfind('?')) != std::string::npos) {
-        filepath.erase(filepath.rfind('?'));
+//    std::cout << "uri: " << urlpath << std::endl;
+    if ((pos = urlpath.rfind('?')) != std::string::npos) {
+		parameter = urlpath.substr(pos+1);
+		cout << parameter << endl;
+        urlpath.erase(pos);
     }
 
-    if (filepath.rfind('.') != std::string::npos){
-        mime = filepath.substr(filepath.rfind('.'));
+    if (urlpath.rfind('.') != std::string::npos){
+        mime = urlpath.substr(urlpath.rfind('.'));
     }
     decltype(Mime_map)::iterator it;
 
@@ -220,7 +218,7 @@ void HttpServer::getMime(std::shared_ptr<HttpData> httpData) {
     } else {
         httpData->response_->setMime(Mime_map.find("default")->second);
     }
-    httpData->response_->setFilePath(filepath);
+    httpData->response_->setFilePath(urlpath);
 }
 
 HttpServer::FileState HttpServer::static_file(std::shared_ptr<HttpData> httpData, const char *basepath) {
@@ -229,6 +227,44 @@ HttpServer::FileState HttpServer::static_file(std::shared_ptr<HttpData> httpData
     strcpy(file, basepath);
     strcat(file, httpData->response_->filePath().c_str());
 
+    // 命令传输
+    if (httpData->response_->filePath() == "/cmd") {
+        // parse parameter: pw=xxx&command=reboot/poweroff/gettick
+        std::vector<std::string> parse_patameter = split(parameter, "&");
+        for(int i=0; i<parse_patameter.size(); i++) {
+			std::cout<<parse_patameter[i]<<std::endl;
+			std::vector<std::string> tmp_parse_patameter = split(parse_patameter[i], "=");
+			if(tmp_parse_patameter[0] == "tick")
+			{
+				pw = tmp_parse_patameter[1];
+				cout << pw << endl;
+			}
+			else if(tmp_parse_patameter[0] == "command")
+			{
+				command = tmp_parse_patameter[1];
+				cout << command << endl;
+			}
+		}
+        httpData->response_->setMime(MimeType("text/plain"));
+        httpData->response_->setStatusCode(HttpResponse::k200Ok);
+        httpData->response_->setStatusMsg("OK");
+
+		time_t nowtime;
+		time(&nowtime);
+		if(difftime(nowtime, tick_life) > 300)
+		{
+			tick = genrandomstring(10);
+			tick_life = nowtime;
+			return CMD_ERROR;
+		}
+ 		if(pw != tick)
+		{
+			return CMD_ERROR;
+		}
+		
+		
+        return CMD_OK;
+    }
     // 文件不存在
     if (httpData->response_->filePath() == "/" || stat(file, &file_stat) < 0) {
         // FIXME 设置Mime 为 html
@@ -270,6 +306,42 @@ void HttpServer::send(std::shared_ptr<HttpData> httpData, FileState fileState) {
     const char *internal_error = "Internal Error";
     struct stat file_stat;
     httpData->response_->appenBuffer(header);
+    
+    // cmd ok/not found
+    if (fileState == CMD_ERROR) {
+		std::string msg = "ERROR";
+		if(command == "gettick") {
+			msg = tick;
+			cout<< msg << endl;
+		}
+        sprintf(header, "%sContent-length: %d\r\n\r\n", header, msg.size());
+        sprintf(header, "%s%s", header, msg.c_str());
+        ::send(httpData->clientSocket_->fd, header, strlen(header), 0);
+        return;
+    }
+    if (fileState == CMD_OK) {
+		std::string msg = "OK";
+		if(command == "reboot") {
+			cout << "now reboot" << endl;
+			system("reboot");
+		}
+		else if(command == "poweroff") {
+			cout << "now poweroff" << endl;
+			system("poweroff");
+		}
+		else if(command == "shutdown") {
+			cout << "now shutdown" << endl;
+			system("shutdown");
+		}
+		else
+		{
+			msg = "ERROR";
+		}
+        sprintf(header, "%sContent-length: %d\r\n\r\n", header, msg.size());
+        sprintf(header, "%s%s", header, msg.c_str());
+        ::send(httpData->clientSocket_->fd, header, strlen(header), 0);
+        return;
+    }
     // 404
     if (fileState == FIlE_NOT_FOUND) {
 

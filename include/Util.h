@@ -1,13 +1,11 @@
-//
-// Created by marvinle on 2019/2/1 12:07 PM.
-//
-
 //#ifndef WEBSERVER_UTILS_H
 //#define WEBSERVER_UTILS_H
 
 #pragma once
 
 #include <string>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -22,7 +20,7 @@ void handle_for_sigpipe();
 
 int check_base_path(char *basePath);
 
-
-
+std::vector<std::string> split(std::string str,std::string pattern);
+std::string genrandomstring(int length);
 
 //#endif //WEBSERVER_UTILS_H
