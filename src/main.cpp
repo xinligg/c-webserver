@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
 
     //  输出配置信息
     {
-      printf("*******LC WebServer 配置信息*******\n");
+      printf("*******XL WebServer 配置信息*******\n");
       printf("端口:\t%d\n", port);
       printf("线程数:\t%d\n", threadNumber);
       printf("根目录:\t%s\n", basePath.c_str());
